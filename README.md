@@ -6,7 +6,9 @@
 4. ubuntu/Linux 타겟 설정 해제(통합)
 
 ```
+git stash
 git pull
+git stash pop
 ```
 
 1. ubuntu/Linux 타겟 설정(TCP/RDMA)
