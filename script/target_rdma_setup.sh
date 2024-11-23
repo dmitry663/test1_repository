@@ -14,7 +14,7 @@ sudo modprobe nvmet-rdma
 
 # 서브시스템 설정
 sudo mkdir /sys/kernel/config/nvmet/subsystems/$NQN
-sudo sh -c 'echo 1 > /sys/kernel/config/nvmet/subsystems/$NQN/attr_allow_any_host'
+sudo sh -c "echo 1 > /sys/kernel/config/nvmet/subsystems/$NQN/attr_allow_any_host"
 
 # 네임스페이스 연결
 sudo mkdir /sys/kernel/config/nvmet/subsystems/$NQN/namespaces/1
