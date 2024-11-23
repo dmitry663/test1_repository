@@ -2,8 +2,8 @@
 
 # NVMe-oF TCP 타겟 설정
 NQN="nqn.2024-07.io.example:nvme-oF-target"
-NVME_DEVICE="/dev/nvme0n1"
-TARGET_IP="192.168.1.1"
+NVME_DEVICE="/dev/nvme0n1p4"
+TARGET_IP="192.168.1.7"
 PORT="4420"
 
 echo "==== NVMe-oF TCP 타겟 설정 ===="

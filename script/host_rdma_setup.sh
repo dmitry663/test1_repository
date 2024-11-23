@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # NVMe-oF RDMA 호스트 설정
-TARGET_IP="192.168.1.1"
+TARGET_IP="192.168.1.7"
 PORT="4420"
 NQN="nqn.2024-07.io.example:nvme-oF-target"
 
