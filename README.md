@@ -20,3 +20,8 @@ sudo wireshark
 chmod +x install_nvme_cli.sh
 sudo ./install_nvme_cli.sh
 ```
+
+```
+chmod +x mount_nvme.sh
+sudo ./mount_nvme.sh
+```
