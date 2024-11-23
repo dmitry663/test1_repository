@@ -15,3 +15,8 @@ sudo ./install_and_run_wireshark.sh
 
 sudo wireshark
 ```
+
+```
+chmod +x install_nvme_cli.sh
+sudo ./install_nvme_cli.sh
+```
