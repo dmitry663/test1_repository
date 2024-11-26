@@ -44,7 +44,10 @@ chmod +x script/target_teardown.sh
 sudo ./script/target_teardown.sh
 ```
 
-
+1. 
+```
+sudo wireshark
+```
 ```
 chmod +x setup_nvmeof_target.sh
 sudo ./setup_nvmeof_target.sh
