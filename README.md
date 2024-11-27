@@ -10,7 +10,10 @@ git stash
 git pull
 git stash pop
 ```
-
+```
+chmod +x io_traffic.sh
+sudo ./io_traffic.sh
+```
 1. ubuntu/Linux 타겟 설정(TCP/RDMA)
 - ubuntu/Linux 타겟 설정(TCP)
 ```
