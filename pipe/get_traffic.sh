@@ -1,4 +1,4 @@
-sudo tshark -i any -l -f "tcp port 4420" -T filelds\
+sudo tshark -i any -l -f "tcp port 4420" -T fields\
     -e frame.number\
     -e frame.len\
     -e frame.time_relative\
