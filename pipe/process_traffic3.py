@@ -27,18 +27,18 @@ def transform_data(next_line, prev_line = None, num=0):
         row = []
 
         row.append(num)
-        row.append(float(data[header.index('frame.time_epoch')]))
+        row.append(data[header.index('frame.time_epoch')])
         row.append(-1 if prev_line is None or data[header.index('frame.time_epoch')] - prev_line[transform_header.index('timestamp')]>5 else 0 if tump > 0 else data[header.index('frame.time_epoch')] - prev_line[transform_header.index('timestamp')])
-        row.append(int(data[header.index('frame.len')]))         
+        row.append(data[header.index('frame.len')])         
         if data[header.index('tcp.dstport')] == 4420:
             row.append(0)
         elif data[header.index('tcp.srcport')] == 4420:
             row.append(1)
         else:
             row.append(-1)
-        row.append(int(data[header.index('tcp.seq_raw')]))
-        row.append(int(data[header.index('tcp.len')]))
-        row.append(int(data[header.index('tcp.ack_raw')]))
+        row.append(data[header.index('tcp.seq_raw')])
+        row.append(data[header.index('tcp.len')])
+        row.append(data[header.index('tcp.ack_raw')])
         row.append(data[header.index('nvme-tcp.type')][0] if len(data[header.index('nvme-tcp.type')]) else -1)
         row.append(data[header.index('nvme-tcp.pdo')][0] if len(data[header.index('nvme-tcp.pdo')]) else -1)
         row.append(data[header.index('nvme-tcp.plen')][0] if len(data[header.index('nvme-tcp.plen')]) else -1)
@@ -86,106 +86,51 @@ def scaler_data(df):
     return features,df
 
 def prepare_sequences(data, features, window_size, data_size=1):
-    if not len(data) - data_size + 1 > 0:
+    if not len(data)-data_size+1>0:
         return None
-
-    # 데이터 타입 강제 변환
-    data[features] = data[features].apply(pd.to_numeric, errors='coerce').fillna(0)
-
+    
     sequences = []
-    for i in range(len(data) - data_size, len(data)):
-        seq = data.iloc[i - window_size:i][features].values.astype('float32')  # float32로 변환
+    for i in range(len(data)-data_size,len(data)):
+        seq = data.iloc[i-window_size:i][features].values
         sequences.append(seq)
     return np.array(sequences)
 
-
-import sys
-import pandas as pd
-import numpy as np
-from tensorflow.keras.models import load_model
-import matplotlib.pyplot as plt
-from collections import deque
-
-def update_plot(ax, line, mse_window, threshold):
-    """실시간 그래프 업데이트"""
-    line.set_ydata(mse_window)
-    line.set_xdata(range(len(mse_window)))
-    ax.relim()  # 축 한계 재조정
-    ax.autoscale_view()  # 축 크기 자동 조정
-    ax.axhline(threshold, color="red", linestyle="--", label="Threshold")
-    plt.draw()
-    plt.pause(0.1)  # 짧은 지연으로 업데이트
-
 def main(model_path, features, window_size, THRESHOLD):
-    # DataFrame 초기화
-    df = pd.DataFrame(columns=features)
-    mse_window = deque(maxlen=50)  # 최근 50개의 MSE 값을 저장
-
-    # 그래프 초기화
-    plt.ion()  # 인터랙티브 모드 활성화
-    fig, ax = plt.subplots(figsize=(10, 6))
-    line, = ax.plot([], [], label="MSE", color="blue")
-    ax.set_title("Real-Time Anomaly Detection")
-    ax.set_xlabel("Sequence")
-    ax.set_ylabel("MSE")
-    ax.grid(True)
-    ax.legend()
+    # main 함수 내부
+    df = pd.DataFrame(columns=features)  # 빈 데이터프레임으로 초기화
+    anomaly_scores=[]
 
     # 모델 로드
     model = load_model(model_path)
     print(f"Model loaded from: {model_path}")
 
-    try:
-        # 실시간 데이터 읽기
-        for line in sys.stdin:
-            if line.strip():  # 빈 줄 무시
-                # 데이터 변환
-                header, data = transform_data(line.strip())
-                print(f"Data received: {len(data)}")
+    # 실시간 데이터 읽기
+    # stdin에서 실시간으로 데이터 읽기
+    for line in sys.stdin:
+        if line.strip():  # 빈 줄이 아닌 경우만 처리
+            # 데이터 변환
+            header, data = transform_data(line.strip('\n'))
+            print(f"transform data:{len(data)}")
 
-                # DataFrame으로 변환 및 정규화
-                new_df = pd.DataFrame(data, columns=header)
-                _, new_df = scaler_data(new_df)
+            # 리스트에 데이터 추가
+            _,new_df= scaler_data(pd.DataFrame(data, columns=header))
+            df = pd.concat([df, new_df], axis=0)
 
-                # 빈 데이터프레임 체크
-                if not new_df.empty:
-                    df = pd.concat([df, new_df], axis=0)
-                else:
-                    print("Warning: new_df is empty. Skipping...")
-                    continue
-
-                # 데이터 충분성 체크
-                if len(df) < window_size:
-                    print("Not enough data to create sequences. Skipping...")
-                    continue
-
-                # 윈도우 생성
-                sequences = prepare_sequences(df, features, window_size, len(data))
-
-                if sequences is None or sequences.shape[1] == 0:
-                    print("Invalid sequences generated. Skipping...")
-                    continue
-
-                # 모델 예측
+            # 윈도우 생성(추가된 만큼)
+            sequences = prepare_sequences(df, features, window_size, len(data))
+            
+            if sequences is None or len(sequences) == 0:
+                print("Insufficient data for sequences. Skipping...")
+                continue  # 다음 데이터로 이동
+            # 생성된 원도우 mse 구하기
+            if sequences is not None and len(sequences) > 0:
                 reconstructed = model.predict(sequences)
-                mse = np.mean(np.power(sequences - reconstructed, 2), axis=(1, 2))  # 재구성 오차 계산
-
-                # 최근 MSE 값을 저장하고 그래프 업데이트
-                mse_window.extend(mse)
-                update_plot(ax, line, mse_window, THRESHOLD)
-
-                # 결과 출력
-                for score in mse:
-                    print(f"Anomaly score: {score}")
-
-    except KeyboardInterrupt:
-        # Ctrl+C 발생 시
-        print("\nKeyboardInterrupt detected. Exiting gracefully...")
-
-    finally:
-        # 그래프 표시
-        plt.ioff()  # 인터랙티브 모드 종료
-        plt.show()
+                mse = np.mean(np.power(sequences - reconstructed, 2), axis=(1, 2))# 재구성 오차 계산
+            
+                # mse 알림 또는 그래프에 추가
+                anomaly_scores.extend(mse)
+                for fild in mse:
+                    print(fild)
 
 
 if __name__ == "__main__":
@@ -197,5 +142,6 @@ if __name__ == "__main__":
     WINDOW_SIZE = 10  # 슬라이딩 윈도우 크기
     THRESHOLD = 0.005  # 재구성 오차 임계값 (적절히 조정)
 
-    # 실행
+    # 테스트 실행
+    # anomaly_detection_pipe(TEST_FILE, MODEL_PATH, FEATURES, WINDOW_SIZE, THRESHOLD)
     main(MODEL_PATH, FEATURES, WINDOW_SIZE, THRESHOLD)
