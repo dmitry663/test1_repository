@@ -109,7 +109,7 @@ def main(model_path, features, window_size, THRESHOLD):
     for line in sys.stdin:
         if line.strip():  # 빈 줄이 아닌 경우만 처리
             # 데이터 변환
-            header, data = transform_data(line)
+            header, data = transform_data(line.strip('\n'))
             print(f"transform data:{len(data)}")
 
             # 리스트에 데이터 추가
