@@ -11,6 +11,13 @@ git pull
 git stash pop
 ```
 ```
+pip install tensorflow
+pip install pandas
+pip install numpy
+pip install tensorflow-gpu
+
+```
+```
 chmod +x io_traffic.sh
 sudo ./io_traffic.sh
 ```
